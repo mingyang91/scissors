@@ -1,6 +1,7 @@
 import org.jetbrains.compose.compose
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import dev.famer.build.DownloadPythonTask
 
 plugins {
     kotlin("jvm") version "1.5.31"
@@ -41,3 +42,5 @@ compose.desktop {
         }
     }
 }
+
+tasks.register<DownloadPythonTask>("downloadPython")
