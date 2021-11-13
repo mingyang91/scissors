@@ -31,8 +31,9 @@ fun DnDComponent(onDrop: (List<File>) -> Unit) {
                         files.addAll(pdfFileList)
                     }
                 }
-                override fun dragExit(dte: DropTargetEvent?) {
-                    super.dragExit(dte)
+
+                override fun dragOver(dtde: DropTargetDragEvent?) {
+                    super.dragOver(dtde)
                     onDrop(files.toList())
                 }
             }
