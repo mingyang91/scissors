@@ -1,30 +1,24 @@
-// Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.awt.SwingPanel
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import java.awt.datatransfer.DataFlavor
-import java.awt.dnd.DropTarget
-import java.awt.dnd.DropTargetDragEvent
-import java.io.File
-import java.nio.charset.StandardCharsets
+import dev.famer.scissors.DnDComponent
+import dev.famer.scissors.OCRUtils
+import dev.famer.scissors.PDFUtils
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.nio.file.Path
-import javax.swing.BoxLayout
-import javax.swing.JPanel
-import kotlin.io.path.readText
-import org.apache.pdfbox.Loader
-import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject
-import java.nio.file.Files
-import javax.imageio.ImageIO
 
 @Composable
 @Preview
 fun App() {
+    val coroutineScope = rememberCoroutineScope()
     var text by remember { mutableStateOf("Hello, World!") }
     val resourceRoot = {
         val propertyFirst: String = System.getProperty("compose.application.resources.dir")
@@ -41,37 +35,18 @@ fun App() {
 
 
     MaterialTheme {
-        SwingPanel(background = Color.White, factory = {
-            JPanel().apply {
-                layout = BoxLayout(this, BoxLayout.Y_AXIS)
-                dropTarget = object : DropTarget() {
-                    override fun dragEnter(dtde: DropTargetDragEvent?) {
-                        super.dragEnter(dtde)
-                        val list = dtde?.transferable?.getTransferData(DataFlavor.javaFileListFlavor)
-                        if (list is List<*>) {
-                            list.filterIsInstance<File>()
-                                .forEach { it ->
-                                    val pdf = Loader.loadPDF(it)
-                                    pdf.pages.map { page ->
-                                        val resources = page.resources
-                                        resources.xObjectNames
-                                            .map(resources::getXObject)
-                                            .filterIsInstance<PDImageXObject>()
-                                            .toList()
-                                            .forEach { pd ->
-                                                val file = File.createTempFile("pdf", ".png")
-                                                ImageIO.write(pd.image, "png", file)
-                                                println(file.toString())
-                                            }
-                                    }
-                                    println(it)
-                                }
-                        }
-
+        DnDComponent { files ->
+            coroutineScope.launch {
+                flowOf(*files.toTypedArray())
+                    .flatMapConcat { PDFUtils.extractAllImages(it) }
+                    .map { pair ->
+                        Pair(pair.first, OCRUtils.rpc(pair.second))
                     }
-                }
+                    .collect { value ->
+                        println(value)
+                    }
             }
-        })
+        }
 
         Button(onClick = {
             text = "Hello, Desktop!"

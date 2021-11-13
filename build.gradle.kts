@@ -5,6 +5,7 @@ import dev.famer.build.DownloadPythonTask
 
 plugins {
     kotlin("jvm") version "1.5.31"
+    kotlin("plugin.serialization") version "1.5.31"
     id("org.jetbrains.compose") version "1.0.0-beta5"
 }
 
@@ -17,10 +18,16 @@ repositories {
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
 }
 
+val ktor_version = "1.6.5"
+
 dependencies {
     testImplementation(kotlin("test"))
     implementation(compose.desktop.currentOs)
     implementation("org.apache.pdfbox:pdfbox:3.0.0-RC1")
+    implementation("io.arrow-kt:arrow-core:1.0.1")
+    implementation("io.arrow-kt:arrow-streams:0.10.5")
+    implementation("io.ktor:ktor-client-cio:$ktor_version")
+    implementation("io.ktor:ktor-client-serialization:$ktor_version")
 }
 
 tasks.test {
