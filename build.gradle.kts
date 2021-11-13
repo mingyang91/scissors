@@ -20,6 +20,7 @@ repositories {
 dependencies {
     testImplementation(kotlin("test"))
     implementation(compose.desktop.currentOs)
+    implementation("org.apache.pdfbox:pdfbox:3.0.0-RC1")
 }
 
 tasks.test {
