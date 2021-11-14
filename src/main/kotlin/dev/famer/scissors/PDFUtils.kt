@@ -12,19 +12,21 @@ import javax.imageio.ImageIO
 object PDFUtils {
     suspend fun extractAllImages(file: File): Flow<Pair<Int, File>> {
         val pdf = load(file)
-        val manus = pdf.pages
-            .flatMapIndexed { index, page ->
-                val resources = page.resources
-                resources.xObjectNames
-                    .map(resources::getXObject)
-                    .filterIsInstance<PDImageXObject>()
-                    .map { Pair(index, it) }
+        return flowOf(*pdf.pages.toList().toTypedArray())
+            .withIndex()
+            .map { page ->
+                withContext(Dispatchers.IO) {
+                    val resources = page.value.resources
+                    val obj = resources.xObjectNames
+                        .map(resources::getXObject)
+                        .filterIsInstance<PDImageXObject>()
+                        .take(1)[0]
+                    Pair(page.index, obj)
+                }
             }
-        return flowOf(*manus.toList().toTypedArray())
             .map { pair ->
                 Pair(pair.first, saveImage(pair.second))
             }
-
     }
 
     private suspend fun load(file: File): PDDocument = withContext(Dispatchers.IO) {
