@@ -1,17 +1,23 @@
 package dev.famer.scissors
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.withContext
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject
-import java.io.File
+import java.nio.file.Files
+import java.nio.file.Path
 import javax.imageio.ImageIO
+import kotlin.io.path.name
 
 object PDFUtils {
-    suspend fun extractAllImages(file: File): Flow<Pair<Int, File>> {
+    suspend fun extractAllImages(file: Path): Flow<Pair<Int, Path>> {
         val pdf = load(file)
+        val dir = createFolder(file.name)
         return flowOf(*pdf.pages.toList().toTypedArray())
             .withIndex()
             .map { page ->
@@ -25,17 +31,21 @@ object PDFUtils {
                 }
             }
             .map { pair ->
-                Pair(pair.first, saveImage(pair.second))
+                Pair(pair.first, saveImage(pair.second, dir))
             }
     }
 
-    private suspend fun load(file: File): PDDocument = withContext(Dispatchers.IO) {
-        Loader.loadPDF(file)
+    private suspend fun load(file: Path): PDDocument = withContext(Dispatchers.IO) {
+        Loader.loadPDF(file.toFile())
     }
 
-    private suspend fun saveImage(imgObj: PDImageXObject): File = withContext(Dispatchers.IO) {
-        val file = File.createTempFile("pdf", ".png")
-        ImageIO.write(imgObj.image, "png", file)
+    private suspend fun createFolder(prefix: String) = withContext(Dispatchers.IO) {
+        Files.createTempDirectory(prefix)
+    }
+
+    private suspend fun saveImage(imgObj: PDImageXObject, folder: Path): Path = withContext(Dispatchers.IO) {
+        val file = Files.createTempFile(folder, "", ".png")
+        ImageIO.write(imgObj.image, "png", file.toFile())
         file
     }
 }

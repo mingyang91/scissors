@@ -6,7 +6,7 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.features.json.*
 import io.ktor.client.features.json.serializer.*
 import io.ktor.client.request.*
-import java.io.File
+import java.nio.file.Path
 
 object OCRUtils {
     private val client = HttpClient(CIO) {
@@ -14,7 +14,7 @@ object OCRUtils {
             serializer = KotlinxSerializer()
         }
     }
-    suspend fun rpc(file: File): List<Span> {
+    suspend fun rpc(file: Path): List<Span> {
         val res: List<Span> = client.get("http://localhost:9000") {
             parameter("path", file.toString())
         }

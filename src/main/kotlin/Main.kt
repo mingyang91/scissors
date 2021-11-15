@@ -45,7 +45,7 @@ fun App() {
             DnDComponent { files ->
                 coroutineScope.launch {
                     flowOf(*files.toTypedArray())
-                        .flatMapConcat { PDFUtils.extractAllImages(it) }
+                        .flatMapConcat { PDFUtils.extractAllImages(it.toPath()) }
                         .map { pair ->
                             Pair(pair.first, OCRUtils.rpc(pair.second))
                         }
