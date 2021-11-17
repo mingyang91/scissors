@@ -2,14 +2,20 @@ from typing import List
 
 from fastapi import FastAPI
 from paddleocr import PaddleOCR
+import pickle
+from sklearn import svm
+from train import compute_hog
+import numpy as np
 
 app = FastAPI()
 
 ocr = PaddleOCR(use_angle_cls=True, lang='ch', use_gpu=False)
 
+model: svm.SVC = pickle.load(open(r".\models\2021-11-17.svm.model", "rb"))
 
-@app.get("/")
-async def hello(path: str):
+
+@app.get("/ocr")
+async def ocr(path: str):
     result = ocr.ocr(path, cls=True)
     resp = list(map(extract_span, result))
     return resp
@@ -29,3 +35,11 @@ def extract_span(span: List[any]):
 def to_coordinate(position: List[float]):
     x, y = position
     return {'x': float(x), 'y': float(y)}
+
+
+@app.get("/clf")
+async def clf(path: str):
+    hog = compute_hog(path)
+    result = model.predict(np.array(hog).reshape(1, len(hog)))
+    return result[0]
+
