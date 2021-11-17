@@ -8,14 +8,21 @@ import io.ktor.client.features.json.serializer.*
 import io.ktor.client.request.*
 import java.nio.file.Path
 
-object OCRUtils {
+object RPCUtils {
     private val client = HttpClient(CIO) {
         install(JsonFeature) {
             serializer = KotlinxSerializer()
         }
     }
-    suspend fun rpc(file: Path): List<Span> {
-        val res: List<Span> = client.get("http://localhost:9000") {
+    suspend fun ocr(file: Path): List<Span> {
+        val res: List<Span> = client.get("http://localhost:9000/ocr") {
+            parameter("path", file.toString())
+        }
+        return res
+    }
+
+    suspend fun clf(file: Path): String {
+        val res: String = client.get("http://localhost:9000/clf") {
             parameter("path", file.toString())
         }
         return res

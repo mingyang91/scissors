@@ -4,9 +4,12 @@ import pickle
 from os import listdir
 from os.path import join
 
+import cv2
 import numpy as np
 from sklearn import svm
 from sklearn.metrics import classification_report, accuracy_score
+from typing import Tuple, List
+
 from common import compute_hog
 
 logging.basicConfig()
@@ -14,15 +17,17 @@ logger = logging.getLogger("train")
 logger.setLevel(logging.DEBUG)
 
 
+rotates = [None, cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
+
+
 def train():
-    covers = [join(r"D:\sample\cover", name) for name in listdir(r"D:\sample\cover")]
-    contents = [join(r"D:\sample\content", name) for name in listdir(r"D:\sample\content")]
 
-    labels = ["cover" for _ in covers] + ["content" for _ in contents]
+    cover_features = dataset("cover")
+    content_features = dataset("content")
+    hog_features = cover_features + content_features
+
+    labels = ["cover" for _ in cover_features] + ["content" for _ in content_features]
     labels_nd = np.array(labels).reshape(len(labels), 1)
-
-    hog_features = [compute_hog(file) for file in covers] + [compute_hog(file) for file in contents]
-
     data_frame = np.hstack((hog_features, labels_nd))
 
     np.random.shuffle(data_frame)
@@ -47,5 +52,12 @@ def train():
     pickle.dump(clf, open(fr".\models\{datetime.date.today().isoformat()}.svm.model", "wb"))
 
 
-if __name__ == "main":
+def dataset(label: str) -> List[np.array]:
+    files = [join(fr"D:\sample\{label}", name) for name in listdir(fr"D:\sample\{label}")]
+
+    hog_features = [compute_hog(file, rotate) for rotate in rotates for file in files]
+
+    return hog_features
+
+if __name__ == "__main__":
     train()

@@ -1,7 +1,6 @@
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
@@ -10,7 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import dev.famer.scissors.DnDComponent
-import dev.famer.scissors.OCRUtils
+import dev.famer.scissors.RPCUtils
 import dev.famer.scissors.PDFUtils
 import dev.famer.scissors.models.Span
 import kotlinx.coroutines.flow.collect
@@ -47,14 +46,23 @@ fun App() {
                     flowOf(*files.toTypedArray())
                         .flatMapConcat { PDFUtils.extractAllImages(it.toPath()) }
                         .map { pair ->
-                            Pair(pair.first, OCRUtils.rpc(pair.second))
+                            val clf = RPCUtils.clf(pair.second)
+                            if (clf == "\"cover\"") {
+                                Pair(pair.first, RPCUtils.ocr(pair.second))
+                            } else {
+                                Pair(pair.first, emptyList())
+                            }
                         }
                         .collect { value ->
                             if (logs.size > 20) {
                                 logs.removeFirst()
                             }
                             val newLog = value.second.map(Span::text).joinToString()
-                            logs.add(newLog)
+                            if (newLog.isEmpty()) {
+                                logs.add("内容页，跳过")
+                            } else {
+                                logs.add(newLog)
+                            }
                             println(newLog)
                         }
 

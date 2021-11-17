@@ -9,14 +9,14 @@ import numpy as np
 
 app = FastAPI()
 
-ocr = PaddleOCR(use_angle_cls=True, lang='ch', use_gpu=False)
+paddle = PaddleOCR(use_angle_cls=True, lang='ch', use_gpu=False)
 
 model: svm.SVC = pickle.load(open(r".\models\2021-11-17.svm.model", "rb"))
 
 
 @app.get("/ocr")
 async def ocr(path: str):
-    result = ocr.ocr(path, cls=True)
+    result = paddle.ocr(path, cls=True)
     resp = list(map(extract_span, result))
     return resp
 
