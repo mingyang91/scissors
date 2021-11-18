@@ -27,4 +27,25 @@ object RPCUtils {
         }
         return res
     }
+
+    suspend fun health(): Boolean {
+        val res: String = client.get("http://localhost:9000/healt")
+        return res.uppercase() == "OK"
+    }
+
+    private fun locatePython(): Path {
+        val propertyFirst: String = System.getProperty("compose.application.resources.dir")
+            ?: (System.getProperty("user.dir") + "\\resources\\windows-x64\\")
+
+        return Path.of(propertyFirst).resolve("python/python.exe")
+    }
+
+    fun startModelService(): Process {
+        val file = locatePython()
+        val pb = ProcessBuilder()
+            .command(file.toString(), "--version")
+        pb.redirectOutput(ProcessBuilder.Redirect.INHERIT)
+        pb.redirectError(ProcessBuilder.Redirect.INHERIT)
+        return pb.start()
+    }
 }

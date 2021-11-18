@@ -13,7 +13,7 @@ logger.setLevel(logging.DEBUG)
 def reduce(img):
     factor = 800
     height, width, _ = img.shape
-    newHeight, newWidth = 600, 800
+    newHeight, newWidth = 300, 400
     if height > width:
         newHeight, newWidth = factor, width * factor / height
     else:

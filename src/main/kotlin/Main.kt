@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.io.File
 import java.nio.file.Path
 
 @Composable
@@ -25,50 +26,39 @@ fun App() {
     val coroutineScope = rememberCoroutineScope()
     var text by remember { mutableStateOf("Hello, World!") }
     val logs = remember { mutableStateListOf<String>() }
-    val resourceRoot = {
-        val propertyFirst: String = System.getProperty("compose.application.resources.dir")
-            ?: (System.getProperty("user.dir") + "\\resources\\windows-x64\\")
 
-        val file = Path.of(propertyFirst).resolve("python/python.exe")
-        val pb = ProcessBuilder()
-            .command(file.toString(), "--version")
-        pb.redirectOutput(ProcessBuilder.Redirect.INHERIT)
-        pb.redirectError(ProcessBuilder.Redirect.INHERIT)
-        pb.start()
+    fun onDropHandler(files: List<File>) {
+        coroutineScope.launch {
+            flowOf(*files.toTypedArray())
+                .flatMapConcat { PDFUtils.extractAllImages(it.toPath()) }
+                .map { pair ->
+                    val clf = RPCUtils.clf(pair.second)
+                    if (clf == "\"cover\"") {
+                        Pair(pair.first, RPCUtils.ocr(pair.second))
+                    } else {
+                        Pair(pair.first, emptyList())
+                    }
+                }
+                .collect { value ->
+                    if (logs.size > 20) {
+                        logs.removeFirst()
+                    }
+                    val newLog = value.second.map(Span::text).joinToString()
+                    if (newLog.isEmpty()) {
+                        logs.add("内容页，跳过")
+                    } else {
+                        logs.add(newLog)
+                    }
+                    println(newLog)
+                }
+
+        }
+
     }
-    resourceRoot()
-
 
     MaterialTheme {
         Column {
-            DnDComponent { files ->
-                coroutineScope.launch {
-                    flowOf(*files.toTypedArray())
-                        .flatMapConcat { PDFUtils.extractAllImages(it.toPath()) }
-                        .map { pair ->
-                            val clf = RPCUtils.clf(pair.second)
-                            if (clf == "\"cover\"") {
-                                Pair(pair.first, RPCUtils.ocr(pair.second))
-                            } else {
-                                Pair(pair.first, emptyList())
-                            }
-                        }
-                        .collect { value ->
-                            if (logs.size > 20) {
-                                logs.removeFirst()
-                            }
-                            val newLog = value.second.map(Span::text).joinToString()
-                            if (newLog.isEmpty()) {
-                                logs.add("内容页，跳过")
-                            } else {
-                                logs.add(newLog)
-                            }
-                            println(newLog)
-                        }
-
-                }
-
-            }
+            DnDComponent(::onDropHandler)
 
             Button(onClick = {
                 text = "Hello, Desktop!"
@@ -85,8 +75,15 @@ fun App() {
     }
 }
 
-fun main() = application {
-    Window(onCloseRequest = ::exitApplication) {
-        App()
+fun main() {
+    val process = RPCUtils.startModelService()
+
+    application {
+        Window(onCloseRequest = {
+            process.destroy()
+            exitApplication()
+        }) {
+            App()
+        }
     }
 }
