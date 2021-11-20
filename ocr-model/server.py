@@ -43,3 +43,8 @@ async def clf(path: str):
     result = model.predict(np.array(hog).reshape(1, len(hog)))
     return result[0]
 
+
+@app.get("/health")
+async def health():
+    return "OK"
+

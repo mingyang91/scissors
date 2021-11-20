@@ -11,6 +11,7 @@ object Extractor {
         runBlocking {
             val file = Paths.get("D:\\BaiduYunDownload\\检测报告.pdf")
             PDFUtils.extractAllImages(file)
+                .second
                 .collect { value ->
                     println(value)
                 }
