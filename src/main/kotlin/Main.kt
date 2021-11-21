@@ -15,11 +15,11 @@ import dev.famer.scissors.PDFUtils
 import dev.famer.scissors.RPCUtils
 import dev.famer.scissors.models.Span
 import dev.famer.state.MainState
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.nio.file.Path
 
 private val logger = LoggerFactory.getLogger("Main")
 @Composable
@@ -47,26 +47,31 @@ fun App() {
         mainState = MainState.Before(file.name)
         show("处理开始")
         coroutineScope.launch {
-            val (count, flow) = PDFUtils.extractAllImages(file.toPath())
+            val (count, stream) = PDFUtils.extractAllImages(file.toPath())
             mainState = MainState.Processing(count, 0)
-            flow
-                .map { pair ->
-                    val clf = RPCUtils.clf(pair.second)
-                    if (clf == "\"cover\"") {
-                        Pair(pair.first, RPCUtils.ocr(pair.second))
-                    } else {
-                        Pair(pair.first, emptyList())
+            flow {
+                var accumulation: MutableList<Path> = mutableListOf()
+                stream
+                    .collect { (pageNumber, pageFile) ->
+                        mainState = MainState.Processing(count, pageNumber)
+                        val clf = RPCUtils.clf(pageFile)
+                        if (clf == "\"cover\"") {
+                            val spans = RPCUtils.ocr(pageFile)
+                            val newLog = spans.map(Span::text).joinToString()
+                            show(newLog)
+                            emit(accumulation.toList())
+                            accumulation = mutableListOf(pageFile)
+                        } else {
+                            show("内容页，跳过")
+                            accumulation.add(pageFile)
+                        }
                     }
+                emit(accumulation.toList())
+            }
+                .collect {
+                    show("---共 ${it.size} 页，下一份---")
                 }
-                .collect { value ->
-                    mainState = MainState.Processing(count, value.first)
-                    val newLog = value.second.map(Span::text).joinToString()
-                    if (newLog.isEmpty()) {
-                        show("内容页，跳过")
-                    } else {
-                        show(newLog)
-                    }
-                }
+
             mainState = MainState.Done(count)
         }
             .invokeOnCompletion {
