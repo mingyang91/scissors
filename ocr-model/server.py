@@ -41,10 +41,9 @@ def to_coordinate(position: List[float]):
 async def clf(path: str):
     hog = compute_hog(path)
     result = model.predict(np.array(hog).reshape(1, len(hog)))
-    return result[0]
+    return {'type': result[0]}
 
 
 @app.get("/health")
 async def health():
     return "OK"
-

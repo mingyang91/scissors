@@ -17,9 +17,7 @@ fun Processing(logs: List<String>, state: MainState.Processing) {
     val (filename, count, current) = state
     Column {
         Text("处理中： $filename", modifier = Modifier.padding(12.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             LinearProgressIndicator(
                 progress = current.toFloat() / count,
                 modifier = Modifier.padding(12.dp).weight(1f)

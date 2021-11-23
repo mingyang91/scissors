@@ -22,6 +22,8 @@ val ktor_version = "1.6.5"
 
 dependencies {
     testImplementation(kotlin("test"))
+    implementation("org.slf4j:slf4j-simple:1.7.32")
+    implementation("commons-logging:commons-logging:1.2")
     implementation(compose.desktop.currentOs)
     implementation("org.apache.pdfbox:pdfbox:3.0.0-RC1")
     implementation("io.arrow-kt:arrow-core:1.0.1")

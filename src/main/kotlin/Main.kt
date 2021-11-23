@@ -10,6 +10,7 @@ import dev.famer.scissors.components.main.Done
 import dev.famer.scissors.components.main.Prepare
 import dev.famer.scissors.components.main.Processing
 import dev.famer.scissors.components.main.Starting
+import dev.famer.scissors.models.Classification
 import dev.famer.scissors.models.Span
 import dev.famer.state.MainState
 import kotlinx.coroutines.flow.collect
@@ -19,7 +20,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
 
-private val logger = LoggerFactory.getLogger("Main")
+private val logger = LoggerFactory.getLogger("Scissors")
 
 @Composable
 @Preview
@@ -54,15 +55,22 @@ fun App(onCloseRequest: () -> Unit) {
                     .collect { (pageNumber, pageFile) ->
                         mainState = MainState.Processing(file.name, count, pageNumber)
                         val clf = RPCUtils.clf(pageFile)
-                        if (clf == "\"cover\"") {
-                            val spans = RPCUtils.ocr(pageFile)
-                            val newLog = spans.map(Span::text).joinToString()
-                            show(newLog)
-                            emit(accumulation.toList())
-                            accumulation = mutableListOf(pageFile)
-                        } else {
-                            show("内容页，跳过")
-                            accumulation.add(pageFile)
+                        when(clf) {
+                            is Classification.Cover -> {
+                                show("首页，创建新文档")
+                                val spans = RPCUtils.ocr(pageFile)
+                                val newLog = spans.map(Span::text).joinToString()
+                                show("OCR: $newLog")
+                                emit(accumulation.toList())
+                                accumulation = mutableListOf(pageFile)
+                            }
+                            is Classification.Content -> {
+                                show("内容页，附加至文档")
+                                accumulation.add(pageFile)
+                            }
+                            is Classification.HandWrite -> {
+                                show("手写页，丢弃")
+                            }
                         }
                     }
                 emit(accumulation.toList())
