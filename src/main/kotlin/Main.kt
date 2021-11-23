@@ -120,6 +120,7 @@ fun App(onCloseRequest: () -> Unit) {
 }
 
 fun main() {
+    logger.info("软件启动")
 //    val process = RPCUtils.startModelService()
 
     application {
