@@ -1,5 +1,5 @@
 import logging
-import random
+from typing import List
 
 import cv2
 import numpy.ma
@@ -22,15 +22,19 @@ def reduce(img):
     return cv2.resize(img, dsize=(int(newWidth), int(newHeight)), interpolation=cv2.INTER_AREA)
 
 
-def compute_hog(file: str, rotate: int = None) -> object:
-    fd = open(file, "rb")
-    bytes = bytearray(fd.read())
+def compute_hog(file: str, rotates: List[int] = [None]) -> object:
+    handle = open(file, "rb")
+    bytes = bytearray(handle.read())
+    handle.close()
     nparr = numpy.ma.asarray(bytes, dtype=numpy.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
-    if rotate is not None:
-        img = cv2.rotate(img, rotate)
-    reduced = reduce(img)
-    fd, hog_img = hog(reduced, orientations=8, pixels_per_cell=(16, 16), cells_per_block=(4, 4), block_norm='L2',
-                      visualize=True)
-    logger.debug(f"HOG computed: {file}")
-    return fd
+    arr = []
+    for rotate in rotates:
+        if rotate is not None:
+            img = cv2.rotate(img, rotate)
+        img = reduce(img)
+        fd, hog_img = hog(img, orientations=8, pixels_per_cell=(64, 64), cells_per_block=(4, 4), block_norm='L2',
+                          visualize=True)
+        logger.debug(f"HOG computed with {rotate}°: {file}")
+        arr.append(fd)
+    return arr

@@ -16,17 +16,17 @@ logging.basicConfig()
 logger = logging.getLogger("train")
 logger.setLevel(logging.DEBUG)
 
-
 rotates = [None, cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_180, cv2.ROTATE_90_COUNTERCLOCKWISE]
 
 
 def train():
-
     cover_features = dataset("cover")
     content_features = dataset("content")
-    hog_features = cover_features + content_features
+    handwrite_features = dataset("handwrite")
+    hog_features = cover_features + content_features + handwrite_features
 
-    labels = ["cover" for _ in cover_features] + ["content" for _ in content_features]
+    labels = ["cover" for _ in cover_features] + ["content" for _ in content_features] + ["handwrite" for _ in
+                                                                                          handwrite_features]
     labels_nd = np.array(labels).reshape(len(labels), 1)
     data_frame = np.hstack((hog_features, labels_nd))
 
@@ -55,9 +55,10 @@ def train():
 def dataset(label: str) -> List[np.array]:
     files = [join(fr"D:\sample\{label}", name) for name in listdir(fr"D:\sample\{label}")]
 
-    hog_features = [compute_hog(file, rotate) for rotate in rotates for file in files]
+    hog_features = [feature for file in files for feature in compute_hog(file, rotates)]
 
     return hog_features
+
 
 if __name__ == "__main__":
     train()

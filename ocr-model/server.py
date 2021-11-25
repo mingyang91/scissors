@@ -11,7 +11,7 @@ app = FastAPI()
 
 paddle = PaddleOCR(use_angle_cls=True, lang='ch', use_gpu=False)
 
-model: svm.SVC = pickle.load(open(r".\models\2021-11-17.svm.model", "rb"))
+model: svm.SVC = pickle.load(open(r".\models\2021-11-25.svm.model", "rb"))
 
 
 @app.get("/ocr")
@@ -39,7 +39,7 @@ def to_coordinate(position: List[float]):
 
 @app.get("/clf")
 async def clf(path: str):
-    hog = compute_hog(path)
+    hog = compute_hog(path)[0]
     result = model.predict(np.array(hog).reshape(1, len(hog)))
     return {'type': result[0]}
 
