@@ -5,12 +5,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import dev.famer.scissors.PDFUtils
-import dev.famer.scissors.RPCUtils
 import dev.famer.scissors.components.main.Done
 import dev.famer.scissors.components.main.Prepare
 import dev.famer.scissors.components.main.Processing
 import dev.famer.scissors.components.main.Starting
-import dev.famer.scissors.models.Classification
 import dev.famer.scissors.models.PageKind
 import dev.famer.scissors.models.Span
 import dev.famer.state.MainState
@@ -20,7 +18,6 @@ import kotlinx.coroutines.launch
 import org.apache.pdfbox.pdmodel.PDPage
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.nio.file.Path
 
 private val logger = LoggerFactory.getLogger("Scissors")
 
@@ -52,6 +49,7 @@ fun App(onCloseRequest: () -> Unit) {
             val (count, stream) = PDFUtils.classification(file.toPath())
             mainState = MainState.Processing(file.name, count, 0)
             flow {
+                var filename: String = ""
                 var accumulation: MutableList<PDPage> = mutableListOf()
                 stream
                     .collect { kind ->
@@ -59,9 +57,12 @@ fun App(onCloseRequest: () -> Unit) {
                         when(kind) {
                             is PageKind.Cover -> {
                                 show("[${kind.index}] 首页，创建新文档")
-                                val newLog = kind.spans.map(Span::text).joinToString()
-                                show("OCR: $newLog")
-                                emit(accumulation.toList())
+                                val texts = kind.spans.map(Span::text)
+                                val code = texts.firstOrNull { it.startsWith("FYS") } ?: "未识别编号${kind.index}"
+                                val client = texts.firstOrNull { it.startsWith("委托单位") }?.drop(5) ?: "未识别单位${kind.index}"
+                                filename = "${code}-${client}.pdf"
+                                show("文件：$filename")
+                                if (accumulation.isNotEmpty()) emit(Pair(filename, accumulation.toList()))
                                 accumulation = mutableListOf(kind.page)
                             }
                             is PageKind.Content -> {
@@ -73,10 +74,13 @@ fun App(onCloseRequest: () -> Unit) {
                             }
                         }
                     }
-                emit(accumulation.toList())
+                emit(Pair(filename, accumulation.toList()))
             }
-                .collect {
-                    show("---共 ${it.size} 页，下一份---")
+                .collect { (filename, pages) ->
+                    show("---共 ${pages.size} 页，下一份---")
+                    val newFile = file.resolveSibling(filename)
+                    if (!newFile.exists()) PDFUtils.save(newFile.toPath(), pages)
+                    else show("$filename 已存在，跳过")
                 }
 
             mainState = MainState.Done(file.name, count)

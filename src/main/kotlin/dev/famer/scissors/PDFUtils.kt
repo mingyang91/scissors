@@ -2,6 +2,7 @@ package dev.famer.scissors
 
 import dev.famer.scissors.models.Classification
 import dev.famer.scissors.models.PageKind
+import dev.famer.scissors.models.Span
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
@@ -88,32 +89,14 @@ object PDFUtils {
         file
     }
 
-    @Deprecated("For PoC")
-    suspend fun split(file: Path) {
-        val pdf = load(file)
-        val target = PDDocument()
+    suspend fun save(target: Path, pages: List<PDPage>) {
+        val doc = PDDocument()
+        pages.forEach {
+            doc.pages.add(it)
+        }
 
-        pdf.pages
-            .asFlow()
-            .onCompletion { e ->
-                if (e != null) logger.error("PDF process error", e)
-                target.save(file.resolveSibling("split.pdf").toFile())
-                close(pdf)
-            }
-            .withIndex()
-            .map { page ->
-                withContext(Dispatchers.IO) {
-                    val resources = page.value.resources
-                    val obj = resources.xObjectNames
-                        .map(resources::getXObject)
-                        .filterIsInstance<PDImageXObject>()
-                        .take(1)[0]
-                    Pair(page.index, obj)
-                }
-            }
-            .take(10)
-            .collect { (index, obj) ->
-                target.pages.add(pdf.getPage(index))
-            }
+        withContext(Dispatchers.IO) {
+            doc.save(target.toFile())
+        }
     }
 }

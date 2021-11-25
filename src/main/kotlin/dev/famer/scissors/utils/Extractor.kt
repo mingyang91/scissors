@@ -9,7 +9,7 @@ object Extractor {
     fun main(args: Array<String>) {
         runBlocking {
             val file = Paths.get("D:\\BaiduYunDownload\\检测报告.pdf")
-            PDFUtils.split(file)
+//            PDFUtils.split(file)
 //            PDFUtils.extractAllImages(file)
 //                .second
 //                .take(10)
