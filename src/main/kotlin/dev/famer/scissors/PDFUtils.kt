@@ -1,10 +1,13 @@
 package dev.famer.scissors
 
+import dev.famer.scissors.models.Classification
+import dev.famer.scissors.models.PageKind
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.pdmodel.PDDocument
+import org.apache.pdfbox.pdmodel.PDPage
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
@@ -15,7 +18,9 @@ import kotlin.io.path.name
 object PDFUtils {
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
-    suspend fun extractAllImages(file: Path): Pair<Int, Flow<Pair<Int, Path>>> {
+    data class Page(val index: Int, val image: Path, val page: PDPage)
+
+    suspend fun extractAllImages(file: Path): Pair<Int, Flow<Page>> {
         val pdf = load(file)
         val dir = createFolder(file.name)
         val flow = pdf.pages
@@ -25,24 +30,40 @@ object PDFUtils {
                 close(pdf)
             }
             .withIndex()
-            .map { page ->
+            .map { pageWithIndex ->
                 withContext(Dispatchers.IO) {
-                    val resources = page.value.resources
+                    val resources = pageWithIndex.value.resources
                     val obj = resources.xObjectNames
                         .map(resources::getXObject)
                         .filterIsInstance<PDImageXObject>()
                         .take(1)[0]
-                    Pair(page.index, obj)
+                    Pair(pageWithIndex.index, obj)
+                    Page(pageWithIndex.index, saveImage(obj, dir),pageWithIndex.value)
                 }
             }
-            .map { pair ->
-                Pair(pair.first, saveImage(pair.second, dir))
-            }
+
         return Pair(pdf.pages.count, flow)
     }
 
-    suspend fun saveImagesToPDF(images: List<Path>) {
+    suspend fun classification(file: Path): Pair<Int, Flow<PageKind>> {
+        val (count, flow) = extractAllImages(file)
 
+        val clfFlow = flow.map { (index, path, page) ->
+            when (RPCUtils.clf(path)) {
+                is Classification.Cover -> {
+                    val spans = RPCUtils.ocr(path)
+                    PageKind.Cover(index, page, spans)
+                }
+                is Classification.Content -> {
+                    PageKind.Content(index, page)
+                }
+                is Classification.HandWrite -> {
+                    PageKind.HandWrite(index, page)
+                }
+            }
+        }
+
+        return Pair(count, clfFlow)
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")

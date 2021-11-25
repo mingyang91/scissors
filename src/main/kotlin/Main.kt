@@ -11,11 +11,13 @@ import dev.famer.scissors.components.main.Prepare
 import dev.famer.scissors.components.main.Processing
 import dev.famer.scissors.components.main.Starting
 import dev.famer.scissors.models.Classification
+import dev.famer.scissors.models.PageKind
 import dev.famer.scissors.models.Span
 import dev.famer.state.MainState
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import org.apache.pdfbox.pdmodel.PDPage
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.nio.file.Path
@@ -47,29 +49,27 @@ fun App(onCloseRequest: () -> Unit) {
         mainState = MainState.Before(file.name)
         show("处理开始")
         coroutineScope.launch {
-            val (count, stream) = PDFUtils.extractAllImages(file.toPath())
+            val (count, stream) = PDFUtils.classification(file.toPath())
             mainState = MainState.Processing(file.name, count, 0)
             flow {
-                var accumulation: MutableList<Path> = mutableListOf()
+                var accumulation: MutableList<PDPage> = mutableListOf()
                 stream
-                    .collect { (pageNumber, pageFile) ->
-                        mainState = MainState.Processing(file.name, count, pageNumber)
-                        val clf = RPCUtils.clf(pageFile)
-                        when(clf) {
-                            is Classification.Cover -> {
-                                show("首页，创建新文档")
-                                val spans = RPCUtils.ocr(pageFile)
-                                val newLog = spans.map(Span::text).joinToString()
+                    .collect { kind ->
+                        mainState = MainState.Processing(file.name, count, kind.index)
+                        when(kind) {
+                            is PageKind.Cover -> {
+                                show("[${kind.index}] 首页，创建新文档")
+                                val newLog = kind.spans.map(Span::text).joinToString()
                                 show("OCR: $newLog")
                                 emit(accumulation.toList())
-                                accumulation = mutableListOf(pageFile)
+                                accumulation = mutableListOf(kind.page)
                             }
-                            is Classification.Content -> {
-                                show("内容页，附加至文档")
-                                accumulation.add(pageFile)
+                            is PageKind.Content -> {
+                                show("[${kind.index}] 内容页，附加至文档")
+                                accumulation.add(kind.page)
                             }
-                            is Classification.HandWrite -> {
-                                show("手写页，丢弃")
+                            is PageKind.HandWrite -> {
+                                show("[${kind.index}] 手写页，丢弃")
                             }
                         }
                     }
