@@ -35,6 +35,7 @@ def compute_hog(file: str, rotates: List[int] = [None]) -> object:
         img = reduce(img)
         fd, hog_img = hog(img, orientations=8, pixels_per_cell=(64, 64), cells_per_block=(4, 4), block_norm='L2',
                           visualize=True)
-        logger.debug(f"HOG computed with {rotate}°: {file}")
+        degree = 90 * 0 if rotate is None else rotate
+        logger.debug(f"HOG computed with {degree}°: {file}")
         arr.append(fd)
     return arr
