@@ -3,8 +3,6 @@ package dev.famer.scissors
 import dev.famer.scissors.models.Classification
 import dev.famer.scissors.models.PageKind
 import dev.famer.scissors.models.Span
-import dev.famer.state.MainState
-import io.ktor.util.reflect.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
@@ -34,7 +32,7 @@ object PDFUtils {
         val removeHandwriteOut = file.resolveSibling("移除手写页")
         cleanOutTarget(removeHandwriteOut)
         onProcessing(file.name, count, 0)
-        var filename: String = ""
+        var filename = ""
         var accumulation: MutableList<PageKind> = mutableListOf()
         stream
             .transform { kind ->

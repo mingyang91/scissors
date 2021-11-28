@@ -9,11 +9,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.famer.scissors.DnDComponent
-import dev.famer.state.MainState
+import dev.famer.state.ServeState
 import java.io.File
 
 @Composable
-fun Done(state: MainState.Done, onDropHandler: (files: List<File>) -> Unit) {
+fun Done(state: ServeState.Done, onDropHandler: (files: List<File>) -> Unit) {
     Column {
         Text(
             text = "Tips: 将需要切分的 PDF 文件拖拽至下面区域并释放鼠标。(文件已处理完毕 ${state.filename})",

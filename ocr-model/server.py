@@ -1,11 +1,11 @@
 from typing import List
 
 from fastapi import FastAPI
-from paddleocr import PaddleOCR
 import pickle
 from sklearn import svm
 from train import compute_hog
 import numpy as np
+from paddleocr import PaddleOCR
 
 app = FastAPI()
 

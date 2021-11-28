@@ -8,11 +8,11 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import dev.famer.state.MainState
+import dev.famer.state.ServeState
 
 @Preview
 @Composable
-fun Prepare(state: MainState.Before) {
+fun Prepare(state: ServeState.Before) {
     Column {
         Text("准备中: " + state.filename)
         CircularProgressIndicator(modifier = Modifier.size(100.dp))

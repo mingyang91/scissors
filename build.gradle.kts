@@ -42,6 +42,10 @@ tasks.withType<KotlinCompile>() {
     kotlinOptions.jvmTarget = "11"
 }
 
+tasks.withType<JavaCompile> {
+    options.encoding = "UTF-8"
+}
+
 compose.desktop {
     application {
         mainClass = "MainKt"

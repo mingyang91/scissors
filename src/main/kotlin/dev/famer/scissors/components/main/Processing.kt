@@ -10,10 +10,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import dev.famer.state.MainState
+import dev.famer.state.ServeState
 
 @Composable
-fun Processing(logs: List<String>, state: MainState.Processing) {
+fun Processing(logs: List<String>, state: ServeState.Processing) {
     val (filename, count, current) = state
     Column {
         Text("处理中： $filename", modifier = Modifier.padding(12.dp))
