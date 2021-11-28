@@ -7,23 +7,22 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.features.json.*
 import io.ktor.client.features.json.serializer.*
 import io.ktor.client.request.*
-import io.ktor.util.Identity.decode
-import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collectIndexed
 import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.nio.file.Files
 import java.nio.file.Path
-import java.util.zip.*
-import kotlin.io.path.createDirectory
-import kotlin.io.path.deleteExisting
-import kotlin.io.path.deleteIfExists
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
 
 object RPCUtils {
+    private val logger = LoggerFactory.getLogger(this::class.java)
+
     private val client = HttpClient(CIO) {
         install(JsonFeature) {
             serializer = KotlinxSerializer()
@@ -48,18 +47,18 @@ object RPCUtils {
         return res.uppercase() == "OK"
     }
 
-    private fun locatePython(): Path {
-        val propertyFirst: String = System.getProperty("compose.application.resources.dir")
-            ?: (System.getProperty("user.dir") + "\\resources\\windows-x64\\")
+    private fun modelPath(): Path {
+        return Path.of(System.getenv("LOCALAPPDATA"))
+            .resolve("scissors")
+            .resolve("ocr-model")
+    }
 
-        return Path.of(propertyFirst).resolve("ocr-model\\venv\\Scripts\\python.exe")
+    private fun locatePython(): Path {
+        return modelPath().resolve("venv\\Scripts\\python.exe")
     }
 
     private fun locateEntryFile(): Path {
-        val propertyFirst: String = System.getProperty("compose.application.resources.dir")
-            ?: (System.getProperty("user.dir") + "\\resources\\windows-x64\\")
-
-        return Path.of(propertyFirst).resolve("ocr-model\\main.py")
+        return modelPath().resolve("main.py")
     }
 
     fun startModelService(): Process {
@@ -76,13 +75,21 @@ object RPCUtils {
     suspend fun unzip(onProgress: (count: Int, current: Int) -> Unit) {
         val propertyFirst: String = System.getProperty("compose.application.resources.dir")
             ?: (System.getProperty("user.dir") + "\\resources\\windows-x64\\")
-        val dstDir = Path.of(propertyFirst)
+
         val compressed = Path.of(propertyFirst).resolve("ocr-model.zip")
 
-        if (!compressed.exists()) return // already unpacked
+        val dstDir = modelPath()
 
+        if (dstDir.exists()) { // already unpacked
+            logger.info("already exists, skip")
+            return
+        }
+        dstDir.createDirectories()
+
+        logger.info("before unpacked")
         ZipFile(compressed.toFile()).use { zipfile ->
             val entries = zipfile.entries().toList()
+            logger.info("Total files: ${entries.size}")
             entries
                 .asFlow()
                 .collectIndexed { index, entry ->
@@ -101,11 +108,11 @@ object RPCUtils {
                             fos.close()
                         }
                     }
+                    logger.info("Unpack file: ${entry.name}")
                     onProgress(entries.size, index + 1)
                 }
         }
-        compressed.deleteExisting()
-
+        logger.info("Unpacked completed, delete zip file")
     }
 
     suspend fun newFile(dstDir: File, entry: ZipEntry): File = withContext(Dispatchers.IO) {
