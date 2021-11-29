@@ -25,7 +25,7 @@ object PDFUtils {
                       onProcessing: (filename: String, count: Int, index: Int) -> Unit,
                       onDone: (filename: String, count: Int) -> Unit,
                       log: (String) -> Unit) {
-        val preface = loadAll(locatePreface())
+        val preface = load(locatePreface())
         val (count, stream) = classification(file)
         val splitOut = file.resolveSibling("切分插页")
         cleanOutTarget(splitOut)
@@ -35,6 +35,7 @@ object PDFUtils {
         var filename = ""
         var accumulation: MutableList<PageKind> = mutableListOf()
         stream
+            .onCompletion { preface.close() }
             .transform { kind ->
                 onProcessing(file.name, count, kind.index)
                 when(kind) {
@@ -65,12 +66,12 @@ object PDFUtils {
                 log("---共 ${pages.size} 页，下一份---")
                 val completedFile = splitOut.resolve("$filename.pdf")
                 if (!completedFile.exists()) {
-                    saveAll(completedFile, preface, pages)
+                    saveAll(completedFile, preface.pages.toList(), pages)
                 } else log("$filename 已存在，跳过")
 
                 val withoutHandwriteFile = removeHandwriteOut.resolve("$filename.pdf")
                 if (!withoutHandwriteFile.exists()) {
-                    saveWithOutHandWrite(withoutHandwriteFile, preface, pages)
+                    saveWithOutHandWrite(withoutHandwriteFile, preface.pages.toList(), pages)
                 }
                 else log("$filename 已存在，跳过")
             }
@@ -86,11 +87,6 @@ object PDFUtils {
         }
 
         dir.createDirectory()
-    }
-
-    suspend fun loadAll(file: Path): List<PDPage> {
-        val pdf = load(file)
-        return pdf.pages.toList()
     }
 
     fun locatePreface(): Path {
@@ -190,6 +186,7 @@ object PDFUtils {
 
         withContext(Dispatchers.IO) {
             doc.save(target.toFile())
+            doc.close()
         }
     }
 
@@ -211,6 +208,7 @@ object PDFUtils {
 
         withContext(Dispatchers.IO) {
             doc.save(target.toFile())
+            doc.close()
         }
     }
 }
