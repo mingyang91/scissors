@@ -1,4 +1,4 @@
-package dev.famer.scissors.components.main
+package dev.famer.scissors.components.serve
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.Column

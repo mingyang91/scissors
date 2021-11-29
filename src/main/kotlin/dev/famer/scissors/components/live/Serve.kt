@@ -4,10 +4,10 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.window.Window
 import dev.famer.scissors.PDFUtils
-import dev.famer.scissors.components.main.Done
-import dev.famer.scissors.components.main.Prepare
-import dev.famer.scissors.components.main.Processing
-import dev.famer.scissors.components.main.Starting
+import dev.famer.scissors.components.serve.Done
+import dev.famer.scissors.components.serve.Prepare
+import dev.famer.scissors.components.serve.Processing
+import dev.famer.scissors.components.serve.Starting
 import dev.famer.state.ServeState
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory

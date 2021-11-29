@@ -59,7 +59,7 @@ compose.desktop {
             appResourcesRootDir.set(project.layout.projectDirectory.dir("resources"))
             windows {
                 shortcut = true
-                console = false
+                console = true
                 iconFile.set(project.layout.projectDirectory.file("src/main/resources/images/scissors.ico"))
             }
         }

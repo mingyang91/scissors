@@ -8,6 +8,7 @@ import io.ktor.client.features.json.*
 import io.ktor.client.features.json.serializer.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collectIndexed
 import kotlinx.coroutines.withContext
@@ -43,8 +44,8 @@ object RPCUtils {
     }
 
     suspend fun health(): Boolean {
-        val res: String = client.get("http://localhost:9000/healt")
-        return res.uppercase() == "OK"
+        val res: String = client.get("http://localhost:9000/health")
+        return res.uppercase() == "\"OK\""
     }
 
     private fun modelPath(): Path {
@@ -61,7 +62,7 @@ object RPCUtils {
         return modelPath().resolve("main.py")
     }
 
-    fun startModelService(): Process {
+    suspend fun startModelService(): Process? {
         val python = locatePython()
         val entry = locateEntryFile()
         val pb = ProcessBuilder()
@@ -69,7 +70,18 @@ object RPCUtils {
             .command(python.toString(), entry.toString())
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT)
         pb.redirectError(ProcessBuilder.Redirect.INHERIT)
-        return pb.start()
+
+        val process = pb.start()
+        for (attempt in 1..300) {
+            try {
+                if (health()) return process
+            } catch (e: Throwable) {
+                logger.warn("等待模型服务启动，第 $attempt 次。 ${e.message}")
+            }
+            delay(1000)
+        }
+
+        return null
     }
 
     suspend fun unzip(onProgress: (count: Int, current: Int) -> Unit) {

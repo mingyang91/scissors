@@ -5,8 +5,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.application
 import dev.famer.scissors.RPCUtils
 import dev.famer.state.LiveState
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("Scissors")
@@ -14,7 +12,7 @@ private val logger = LoggerFactory.getLogger("Scissors")
 @Composable
 @Preview
 fun App(onCloseRequest: () -> Unit) {
-    var liveState by remember { mutableStateOf<LiveState>(LiveState.Start) }
+    var liveState by remember { mutableStateOf<LiveState>(LiveState.Bootstrap) }
     var modelProcess by remember { mutableStateOf<Process?>(null) }
 
     fun close() {
@@ -31,15 +29,20 @@ fun App(onCloseRequest: () -> Unit) {
                     liveState = LiveState.Initializing(current, count)
                 }
             )
+            liveState = LiveState.Starting
             modelProcess = RPCUtils.startModelService()
-            logger.info("初始化完成, 模型服务已启动 PID: ${modelProcess!!.pid()}")
-            liveState = LiveState.Serve
+            if (modelProcess != null) {
+                logger.info("初始化完成, 模型服务已启动 PID: ${modelProcess!!.pid()}")
+                liveState = LiveState.Serve
+            } else {
+                liveState = LiveState.Error("模型服务启动失败，请重新安装本软件")
+            }
         } catch (e: Throwable) {
             liveState = LiveState.Error(e.message ?: "未知错误")
         }
     }
     when (liveState) {
-        is LiveState.Start -> {
+        is LiveState.Bootstrap -> {
             Dialog({}, resizable = false) {
                 Text("软件启动中")
             }
@@ -47,6 +50,9 @@ fun App(onCloseRequest: () -> Unit) {
         is LiveState.Initializing -> {
             val s = liveState as LiveState.Initializing
             Initialization(s.current, s.total)
+        }
+        is LiveState.Starting -> {
+            Starting()
         }
         is LiveState.Serve -> {
             Serve(::close)

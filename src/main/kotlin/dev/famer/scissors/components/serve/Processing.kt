@@ -1,4 +1,4 @@
-package dev.famer.scissors.components.main
+package dev.famer.scissors.components.serve
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
