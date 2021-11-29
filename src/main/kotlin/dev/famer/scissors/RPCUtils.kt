@@ -9,8 +9,7 @@ import io.ktor.client.features.json.serializer.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collectIndexed
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -71,7 +70,7 @@ object RPCUtils {
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT)
         pb.redirectError(ProcessBuilder.Redirect.INHERIT)
 
-        val process = pb.start()
+        val process = withContext(Dispatchers.IO) { pb.start() }
         for (attempt in 1..300) {
             try {
                 if (health()) return process
@@ -96,16 +95,17 @@ object RPCUtils {
             logger.info("already exists, skip")
             return
         }
-        dstDir.createDirectories()
+        withContext(Dispatchers.IO) { dstDir.createDirectories() }
 
         logger.info("before unpacked")
-        ZipFile(compressed.toFile()).use { zipfile ->
+        withContext(Dispatchers.IO) { ZipFile(compressed.toFile()) }.use { zipfile ->
             val entries = zipfile.entries().toList()
             logger.info("Total files: ${entries.size}")
             entries
                 .asFlow()
-                .collectIndexed { index, entry ->
-                    withContext(Dispatchers.IO) {
+                .withIndex()
+                .flatMapMerge { (index, entry) ->
+                    flow {
                         val newFile = newFile(dstDir.toFile(), entry)
                         if (entry.isDirectory) {
                             if (newFile.isDirectory) newFile.mkdirs()
@@ -119,10 +119,11 @@ object RPCUtils {
                             inputStream.close()
                             fos.close()
                         }
-                    }
-                    logger.info("Unpack file: ${entry.name}")
-                    onProgress(entries.size, index + 1)
+                        logger.info("Unpack file: ${entry.name}")
+                        emit(index)
+                    }.flowOn(Dispatchers.IO)
                 }
+                .collect { onProgress(entries.size, it + 1) }
         }
         logger.info("Unpacked completed, delete zip file")
     }

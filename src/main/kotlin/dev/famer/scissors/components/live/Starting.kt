@@ -1,3 +1,5 @@
+package dev.famer.scissors.components.live
+
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row

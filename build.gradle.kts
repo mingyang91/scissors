@@ -6,7 +6,7 @@ import dev.famer.build.CopyResourcesTask
 plugins {
     kotlin("jvm") version "1.5.31"
     kotlin("plugin.serialization") version "1.5.31"
-    id("org.jetbrains.compose") version "1.0.0-rc2"
+    id("org.jetbrains.compose") version "1.0.0-rc5"
 }
 
 group = "dev.famer"
@@ -23,7 +23,6 @@ val ktor_version = "1.6.5"
 dependencies {
     testImplementation(kotlin("test"))
     implementation("ch.qos.logback:logback-classic:1.3.0-alpha10")
-//    implementation("org.slf4j:slf4j-jdk14:1.7.32")
     implementation("org.slf4j:slf4j-api:2.0.0-alpha5")
     implementation("org.slf4j:jcl-over-slf4j:2.0.0-alpha5")
     implementation(compose.desktop.currentOs)
