@@ -1,7 +1,7 @@
 <configuration>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${app.data}logFile.log</file>
+        <file>${app.data}/scissors/application.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
             <fileNamePattern>logFile.%d{yyyy-MM-dd}.log</fileNamePattern>
@@ -27,7 +27,7 @@
 
     <logger name="dev.famer" level="debug"/>
 
-    <root level="info">
+    <root level="debug">
         <appender-ref ref="FILE" />
         <appender-ref ref="STDOUT" />
     </root>

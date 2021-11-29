@@ -49,7 +49,7 @@ tasks.withType<JavaCompile> {
 compose.desktop {
     application {
         mainClass = "MainKt"
-//        properties += Pair("", "")
+        jvmArgs += "-Dapp.data=\${LOCALAPPDATA}"
         nativeDistributions {
             includeAllModules = true
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
@@ -59,7 +59,7 @@ compose.desktop {
             appResourcesRootDir.set(project.layout.projectDirectory.dir("resources"))
             windows {
                 shortcut = true
-                console = true
+                console = false
                 iconFile.set(project.layout.projectDirectory.file("src/main/resources/images/scissors.ico"))
             }
         }
