@@ -2,6 +2,7 @@ package dev.famer.scissors
 
 import dev.famer.scissors.models.Classification
 import dev.famer.scissors.models.PageKind
+import dev.famer.scissors.models.Point
 import dev.famer.scissors.models.Span
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -11,15 +12,20 @@ import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.pdmodel.PDPage
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject
 import org.slf4j.LoggerFactory
+import kotlin.math.abs
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.imageio.ImageIO
 import kotlin.io.path.*
+import kotlin.math.max
+import kotlin.math.min
 
 object PDFUtils {
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
     data class Page(val index: Int, val image: Path, val page: PDPage)
+
+    private val ColonLike = setOf(":", ";", "；", "：", ",", "，", ".", "。")
 
     suspend fun split(file: Path,
                       onProcessing: (filename: String, count: Int, index: Int) -> Unit,
@@ -45,7 +51,30 @@ object PDFUtils {
                         log("[${kind.index + 1}] 首页，创建新文档")
                         val texts = kind.spans.map(Span::text)
                         val code = texts.firstOrNull { it.startsWith("FYS") } ?: "未识别编号${kind.index}"
-                        val client = texts.firstOrNull { it.startsWith("委托单位") }?.drop(5) ?: "未识别单位${kind.index}"
+                        val clientTitleSpan = kind.spans.firstOrNull { it.text.contains("委托单位") }
+                        var client: String = "未识别单位${kind.index}"
+                        if (clientTitleSpan != null) {
+                            if (clientTitleSpan.text.length > 6) {
+                                val dropped = clientTitleSpan.text.drop("委托单位".length)
+                                client = if (dropped.startsWith(":") || dropped.startsWith("：")) dropped.drop(1)
+                                else dropped
+                            } else {
+                                val (min, max) = getRowRange(clientTitleSpan.areas)
+                                val find = kind.spans.firstOrNull { span ->
+                                    span != clientTitleSpan &&
+                                    span.areas.all { p -> p.x > min.x && p.x < max.x && p.y > min.y && p.y < max.y }
+                                }
+
+                                if (find != null) {
+                                    client = find.text
+                                }
+                            }
+
+                            if (ColonLike.any(client::startsWith)) {
+                                client = client.drop(1)
+                            }
+                            client = client.trim()
+                        }
                         filename = "${code}-${client}"
                         log("文件：$filename")
                         accumulation = mutableListOf(kind)
@@ -77,6 +106,22 @@ object PDFUtils {
             }
 
         onDone(file.name, count)
+    }
+
+    fun getRowRange(area: List<Point>): Pair<Point, Point> {
+        val p1 = area.get(0)
+        val p2 = area.get(2)
+        val xDistance = abs(p1.x - p2.x)
+        val yDistance = abs(p1.y - p2.y)
+        val xMax = max(p1.x, p2.x) + xDistance * 0.2f
+        val xMin = min(p1.x, p2.x) - xDistance * 0.2f
+        val yMax = max(p1.y, p2.y) + yDistance * 0.2f
+        val yMin = min(p1.y, p2.y) - yDistance * 0.2f
+        return if (xDistance > yDistance) {
+            Pair(Point(0f, yMin), Point(Float.MAX_VALUE, yMax))
+        } else {
+            Pair(Point(xMin, 0f), Point(xMax, Float.MAX_VALUE))
+        }
     }
 
     suspend fun cleanOutTarget(dir: Path) = withContext(Dispatchers.IO) {

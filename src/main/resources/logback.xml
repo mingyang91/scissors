@@ -1,15 +1,12 @@
 <configuration>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${app.data}/scissors/application.log</file>
+        <!-- Support multiple-JVM writing to the same log file -->
+        <prudent>true</prudent>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- daily rollover -->
-            <fileNamePattern>logFile.%d{yyyy-MM-dd}.log</fileNamePattern>
-
-            <!-- keep 30 days' worth of history capped at 3GB total size -->
+            <fileNamePattern>${app.data}/scissors/application.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
             <totalSizeCap>100MB</totalSizeCap>
-
         </rollingPolicy>
 
         <encoder>
