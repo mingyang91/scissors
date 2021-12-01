@@ -11,7 +11,7 @@ app = FastAPI()
 
 paddle = PaddleOCR(use_angle_cls=True, lang='ch', use_gpu=False)
 
-model: svm.SVC = pickle.load(open(r".\models\2021-11-27.svm.model", "rb"))
+model: svm.SVC = pickle.load(open(r".\models\2021-12-01.svm.model", "rb"))
 
 
 @app.get("/ocr")

@@ -16,7 +16,7 @@ import java.io.File
 fun Done(state: ServeState.Done, onDropHandler: (files: List<File>) -> Unit) {
     Column {
         Text(
-            text = "Tips: 将需要切分的 PDF 文件拖拽至下面区域并释放鼠标。(文件已处理完毕 ${state.filename})",
+            text = "您的检验报告已处理完毕-${state.filename}，请至该文件所在目录查看处理结果",
             modifier = Modifier.padding(16.dp),
             fontWeight = FontWeight.Bold,
             color = Color.Gray

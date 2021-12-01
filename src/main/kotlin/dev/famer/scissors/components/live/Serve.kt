@@ -20,6 +20,7 @@ private val logger = LoggerFactory.getLogger("Serve")
 @Composable
 @Preview
 fun Serve(onCloseRequest: () -> Unit) {
+    val org = "复旦大学放射医学研究所专用 - "
     val coroutineScope = rememberCoroutineScope()
     val logs = remember { mutableStateListOf<String>() }
     var serveState by remember { mutableStateOf<ServeState>(ServeState.Starting) }
@@ -66,22 +67,22 @@ fun Serve(onCloseRequest: () -> Unit) {
             Column {
                 when (serveState) {
                     is ServeState.Starting -> {
-                        title = "欢迎使用 Scissors PDF 切分软件"
+                        title = org + "欢迎使用 Scissors 检验报告智能软件"
                         Starting(::onDropHandler)
                     }
                     is ServeState.Before -> {
                         val state = serveState as ServeState.Before
-                        title = "Scissors: 准备处理文件 ${state.filename}"
+                        title = org + "Scissors: 准备处理文件 ${state.filename}"
                         Prepare(state)
                     }
                     is ServeState.Processing -> {
                         val state = serveState as ServeState.Processing
-                        title = "Scissors: 文件处理中 (${state.current}/${state.pageCount}) ${state.filename}"
+                        title = org + "Scissors: 文件处理中 (${state.current}/${state.pageCount}) ${state.filename}"
                         Processing(logs, state)
                     }
                     is ServeState.Done -> {
                         val state = serveState as ServeState.Done
-                        title = "Scissors: 文件处理完毕 ${state.filename}"
+                        title = org + "Scissors: 文件处理完毕 ${state.filename}"
                         Done(state, ::onDropHandler)
                     }
                 }

@@ -15,7 +15,7 @@ import java.io.File
 fun Starting(onDropHandler: (files: List<File>) -> Unit) {
     Column {
         Text(
-            text = "Tips: 将需要切分的 PDF 文件拖拽至下面区域并释放鼠标",
+            text = "Tips: 请将需要处理的检验报告拖拽至下面区域并释放鼠标",
             modifier = Modifier.padding(16.dp),
             fontWeight = FontWeight.Bold,
             color = Color.Gray

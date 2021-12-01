@@ -54,11 +54,23 @@ object RPCUtils {
     }
 
     private fun locatePython(): Path {
-        return modelPath().resolve("venv\\Scripts\\python.exe")
+        return modelPath().resolve("conda\\python.exe")
     }
 
     private fun locateEntryFile(): Path {
         return modelPath().resolve("main.py")
+    }
+
+    private fun condaEnv(): List<String>  {
+        val condaPath = modelPath().resolve("conda")
+        val paths = listOf(
+            condaPath,
+            condaPath.resolve("Library").resolve("mingw-w64").resolve("bin"),
+            condaPath.resolve("Library").resolve("usr").resolve("bin"),
+            condaPath.resolve("Library").resolve("bin"),
+            condaPath.resolve("Scripts"),
+        )
+        return paths.map { it.toString() }
     }
 
     suspend fun startModelService(): Process? {
@@ -67,12 +79,18 @@ object RPCUtils {
         val pb = ProcessBuilder()
             .directory(entry.parent.toFile())
             .command(python.toString(), entry.toString())
+
+        // Re-constructor conda environment variable
+        val env = pb.environment()
+        env.set("PATH", (condaEnv() + env.get("PATH")).filterNotNull().joinToString(";"))
+
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT)
         pb.redirectError(ProcessBuilder.Redirect.INHERIT)
 
         val process = withContext(Dispatchers.IO) { pb.start() }
         for (attempt in 1..300) {
             try {
+                if (!process.isAlive) return null
                 if (health()) return process
             } catch (e: Throwable) {
                 logger.warn("等待模型服务启动，第 $attempt 次。 ${e.message}")
