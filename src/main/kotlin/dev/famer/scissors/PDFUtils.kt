@@ -41,6 +41,8 @@ object PDFUtils {
         cleanOutTarget(firstAndLastOut)
         val firstOnlyOut = file.resolveSibling("仅正文首页")
         cleanOutTarget(firstOnlyOut)
+        val coverAndLastOut = file.resolveSibling("封面与末页")
+        cleanOutTarget(coverAndLastOut)
         onProcessing(file.name, count, 0)
         var filename = ""
         var accumulation: MutableList<PageKind> = mutableListOf()
@@ -116,6 +118,11 @@ object PDFUtils {
                 if (!firstOnlyFile.exists()) {
                     saveFirst(firstOnlyFile, pages)
                 } else log("[仅首页] $filename 已存在，跳过")
+
+                val coverAndLastFile = coverAndLastOut.resolve("$filename.pdf")
+                if (!coverAndLastFile.exists()) {
+                    saveCoverAndLast(coverAndLastFile, pages)
+                } else log("[封面与末页] $filename 已存在，跳过")
             }
 
         onDone(file.name, count)
@@ -276,6 +283,7 @@ object PDFUtils {
         val dropped = pages.filterIsInstance<PageKind.Content>()
         listOf(dropped.firstOrNull(), dropped.lastOrNull())
             .filterNotNull()
+            .distinct()
             .forEach { doc.pages.add(it.page) }
 
         withContext(Dispatchers.IO) {
@@ -289,6 +297,21 @@ object PDFUtils {
 
         val dropped = pages.filterIsInstance<PageKind.Content>()
         listOf(dropped.firstOrNull())
+            .filterNotNull()
+            .forEach { doc.pages.add(it.page) }
+
+        withContext(Dispatchers.IO) {
+            doc.save(target.toFile())
+            doc.close()
+        }
+    }
+
+    private suspend fun saveCoverAndLast(target: Path, pages: List<PageKind>) {
+        val doc = PDDocument()
+
+        val cover = pages.filterIsInstance<PageKind.Cover>()
+        val dropped = pages.filterIsInstance<PageKind.Content>()
+        listOf(cover.firstOrNull(), dropped.lastOrNull())
             .filterNotNull()
             .forEach { doc.pages.add(it.page) }
 
