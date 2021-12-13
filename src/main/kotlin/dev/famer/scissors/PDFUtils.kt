@@ -12,11 +12,11 @@ import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.pdmodel.PDPage
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject
 import org.slf4j.LoggerFactory
-import kotlin.math.abs
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.imageio.ImageIO
 import kotlin.io.path.*
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -33,15 +33,19 @@ object PDFUtils {
                       log: (String) -> Unit) {
         val preface = load(locatePreface())
         val (count, stream) = classification(file)
-        val splitOut = file.resolveSibling("正式报告含原始数据")
+        val out = file.resolveSibling(file.name + "_split").let {
+            if (!it.exists()) it.createDirectory()
+            it
+        }
+        val splitOut = out.resolve("正式报告含原始数据")
         cleanOutTarget(splitOut)
-        val removeHandwriteOut = file.resolveSibling("正式报告")
+        val removeHandwriteOut = out.resolve("正式报告")
         cleanOutTarget(removeHandwriteOut)
-        val firstAndLastOut = file.resolveSibling("正文首页与末页")
+        val firstAndLastOut = out.resolve("正文首页与末页")
         cleanOutTarget(firstAndLastOut)
-        val firstOnlyOut = file.resolveSibling("仅正文首页")
+        val firstOnlyOut = out.resolve("仅正文首页")
         cleanOutTarget(firstOnlyOut)
-        val coverAndLastOut = file.resolveSibling("封面与末页")
+        val coverAndLastOut = out.resolve("封面与末页")
         cleanOutTarget(coverAndLastOut)
         onProcessing(file.name, count, 0)
         var filename = ""
@@ -101,12 +105,12 @@ object PDFUtils {
                 log("---共 ${pages.size} 页，下一份---")
                 val completedFile = splitOut.resolve("$filename.pdf")
                 if (!completedFile.exists()) {
-                    saveAll(completedFile, preface.pages.toList(), pages)
+                    saveAll(completedFile, pages)
                 } else log("[完整] $filename 已存在，跳过")
 
                 val withoutHandwriteFile = removeHandwriteOut.resolve("$filename.pdf")
                 if (!withoutHandwriteFile.exists()) {
-                    saveWithOutHandWrite(withoutHandwriteFile, preface.pages.toList(), pages)
+                    saveWithOutHandWrite(withoutHandwriteFile, pages)
                 } else log("[无手写] $filename 已存在，跳过")
 
                 val firstAndLastFile = firstAndLastOut.resolve("$filename.pdf")
@@ -230,24 +234,15 @@ object PDFUtils {
         file
     }
 
-    private suspend fun saveWithOutHandWrite(target: Path, preface: List<PDPage>, pages: List<PageKind>) {
+    private suspend fun saveWithOutHandWrite(target: Path, pages: List<PageKind>) {
         val doc = PDDocument()
 
         pages
-            .flatMap {
-                when (it) {
-                    is PageKind.Cover -> {
-                        listOf(it.page) + preface
-                    }
-                    is PageKind.Content -> {
-                        listOf(it.page)
-                    }
-                    is PageKind.HandWrite -> {
-                        emptyList()
-                    }
+            .forEach {
+                if (it !is PageKind.HandWrite) {
+                    doc.pages.add(it.page)
                 }
             }
-            .forEach { doc.pages.add(it) }
 
         withContext(Dispatchers.IO) {
             doc.save(target.toFile())
@@ -255,21 +250,11 @@ object PDFUtils {
         }
     }
 
-    private suspend fun saveAll(target: Path, preface: List<PDPage>, pages: List<PageKind>) {
+    private suspend fun saveAll(target: Path, pages: List<PageKind>) {
         val doc = PDDocument()
 
         pages
-            .flatMap {
-                when (it) {
-                    is PageKind.Cover -> {
-                        listOf(it.page) + preface
-                    }
-                    else -> {
-                        listOf(it.page)
-                    }
-                }
-            }
-            .forEach { doc.pages.add(it) }
+            .forEach { doc.pages.add(it.page) }
 
         withContext(Dispatchers.IO) {
             doc.save(target.toFile())
@@ -281,7 +266,7 @@ object PDFUtils {
         val doc = PDDocument()
 
         val dropped = pages.filterIsInstance<PageKind.Content>()
-        listOf(dropped.firstOrNull(), dropped.lastOrNull())
+        listOf(dropped.drop(1).firstOrNull(), dropped.lastOrNull())
             .filterNotNull()
             .distinct()
             .forEach { doc.pages.add(it.page) }
@@ -296,7 +281,7 @@ object PDFUtils {
         val doc = PDDocument()
 
         val dropped = pages.filterIsInstance<PageKind.Content>()
-        listOf(dropped.firstOrNull())
+        listOf(dropped.drop(1).firstOrNull())
             .filterNotNull()
             .forEach { doc.pages.add(it.page) }
 
