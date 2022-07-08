@@ -12,7 +12,7 @@ object Extractor {
     @JvmStatic
     fun main(args: Array<String>) {
         runBlocking {
-            val f: Flow<Int> = callbackFlow<Unit> {
+            val f: Flow<Int> = callbackFlow {
                 val timer = fixedRateTimer("test", true, 0, 1000) {
                     trySend(Unit)
                 }
@@ -22,8 +22,8 @@ object Extractor {
                 .take(10)
                 .shareIn(this, SharingStarted.Lazily)
 
-            val f1: Deferred<Unit> = async<Unit> { f.collect { println(it) } }
-            val f2: Deferred<Unit> = async<Unit> { f.collect { println(it) } }
+            val f1: Deferred<Unit> = async { f.collect { println(it) } }
+            val f2: Deferred<Unit> = async { f.collect { println(it) } }
             f1.await()
             f2.await()
         }

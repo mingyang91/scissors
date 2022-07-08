@@ -17,4 +17,8 @@ sealed class Classification {
     @Serializable
     @SerialName("handwrite")
     object HandWrite: Classification()
+
+    @Serializable
+    @SerialName("error")
+    data class Error(val message: String): Classification()
 }

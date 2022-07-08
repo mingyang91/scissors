@@ -11,15 +11,11 @@ logger.setLevel(logging.DEBUG)
 
 
 def reduce(img):
-    factor = 800
     height, width, _ = img.shape
-    newHeight, newWidth = 300, 400
     if height > width:
-        newHeight, newWidth = factor, width * factor / height
+        return cv2.resize(img, dsize=(600, 800), interpolation=cv2.INTER_AREA)
     else:
-        newHeight, newWidth = height * factor / width, factor
-
-    return cv2.resize(img, dsize=(int(newWidth), int(newHeight)), interpolation=cv2.INTER_AREA)
+        return cv2.resize(img, dsize=(800, 600), interpolation=cv2.INTER_AREA)
 
 
 def compute_hog(file: str, rotates: List[int] = [None]) -> object:

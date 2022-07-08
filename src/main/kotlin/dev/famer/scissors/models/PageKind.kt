@@ -16,5 +16,8 @@ sealed class PageKind {
     data class HandWrite(override val index: Int,
                          override val page: PDPage): PageKind()
 
+    data class Unknown(override val index: Int,
+                       override val page: PDPage,
+                       val message: String): PageKind()
 }
 

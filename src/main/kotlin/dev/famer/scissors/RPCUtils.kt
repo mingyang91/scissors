@@ -3,10 +3,11 @@ package dev.famer.scissors
 import dev.famer.scissors.models.Classification
 import dev.famer.scissors.models.Span
 import io.ktor.client.*
+import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
-import io.ktor.client.features.json.*
-import io.ktor.client.features.json.serializer.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -24,27 +25,27 @@ object RPCUtils {
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     private val client = HttpClient(CIO) {
-        install(JsonFeature) {
-            serializer = KotlinxSerializer()
+        install(ContentNegotiation) {
+            json()
         }
     }
     suspend fun ocr(file: Path): List<Span> {
         val res: List<Span> = client.get("http://localhost:9000/ocr") {
             parameter("path", file.toString())
-        }
+        }.body()
         return res
     }
 
     suspend fun clf(file: Path): Classification {
         val res: Classification = client.get("http://localhost:9000/clf") {
             parameter("path", file.toString())
-        }
+        }.body()
         return res
     }
 
     suspend fun health(): Boolean {
-        val res: String = client.get("http://localhost:9000/health")
-        return res.uppercase() == "\"OK\""
+        val res: String = client.get("http://localhost:9000/health").body()
+        return res.uppercase() == "OK"
     }
 
     private fun modelPath(): Path {
@@ -137,7 +138,6 @@ object RPCUtils {
                             inputStream.close()
                             fos.close()
                         }
-                        logger.info("Unpack file: ${entry.name}")
                         emit(index)
                     }.flowOn(Dispatchers.IO)
                 }

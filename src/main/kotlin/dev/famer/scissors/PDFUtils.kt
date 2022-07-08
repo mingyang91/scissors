@@ -90,11 +90,15 @@ object PDFUtils {
                         accumulation = mutableListOf(kind)
                     }
                     is PageKind.Content -> {
-                        log("[${kind.index + 1}] 内容页，附加至文档")
+                        log("[${kind.index + 1}] 内容页")
                         accumulation.add(kind)
                     }
                     is PageKind.HandWrite -> {
                         log("[${kind.index + 1}] 手写页")
+                        accumulation.add(kind)
+                    }
+                    is PageKind.Unknown -> {
+                        log("[${kind.index + 1}] !!未识别页!!")
                         accumulation.add(kind)
                     }
                 }
@@ -103,30 +107,36 @@ object PDFUtils {
             }
             .collect { (filename, pages) ->
                 log("---共 ${pages.size} 页，下一份---")
-                val completedFile = splitOut.resolve("$filename.pdf")
+                val outName = if (pages.filterIsInstance<PageKind.Unknown>().isEmpty()) {
+                    "$filename.pdf"
+                } else {
+                    "!!!WARN!!! - $filename.pdf"
+                }
+
+                val completedFile = splitOut.resolve(outName)
                 if (!completedFile.exists()) {
                     saveAll(completedFile, pages)
-                } else log("[完整] $filename 已存在，跳过")
+                } else log("[完整] $outName 已存在，跳过")
 
-                val withoutHandwriteFile = removeHandwriteOut.resolve("$filename.pdf")
+                val withoutHandwriteFile = removeHandwriteOut.resolve(outName)
                 if (!withoutHandwriteFile.exists()) {
                     saveWithOutHandWrite(withoutHandwriteFile, pages)
-                } else log("[无手写] $filename 已存在，跳过")
+                } else log("[无手写] $outName 已存在，跳过")
 
-                val firstAndLastFile = firstAndLastOut.resolve("$filename.pdf")
+                val firstAndLastFile = firstAndLastOut.resolve(outName)
                 if (!firstAndLastFile.exists()) {
                     saveFirstAndLast(firstAndLastFile, pages)
-                } else log("[首页与末页] $filename 已存在，跳过")
+                } else log("[首页与末页] $outName 已存在，跳过")
 
-                val firstOnlyFile = firstOnlyOut.resolve("$filename.pdf")
+                val firstOnlyFile = firstOnlyOut.resolve(outName)
                 if (!firstOnlyFile.exists()) {
                     saveFirst(firstOnlyFile, pages)
-                } else log("[仅首页] $filename 已存在，跳过")
+                } else log("[仅首页] $outName 已存在，跳过")
 
-                val coverAndLastFile = coverAndLastOut.resolve("$filename.pdf")
+                val coverAndLastFile = coverAndLastOut.resolve(outName)
                 if (!coverAndLastFile.exists()) {
                     saveCoverAndLast(coverAndLastFile, pages)
-                } else log("[封面与末页] $filename 已存在，跳过")
+                } else log("[封面与末页] $outName 已存在，跳过")
             }
 
         onDone(file.name, count)
@@ -191,11 +201,11 @@ object PDFUtils {
         return Pair(pdf.pages.count, flow)
     }
 
-    suspend fun classification(file: Path): Pair<Int, Flow<PageKind>> {
+    private suspend fun classification(file: Path): Pair<Int, Flow<PageKind>> {
         val (count, flow) = extractAllImages(file)
 
         val clfFlow = flow.map { (index, path, page) ->
-            when (RPCUtils.clf(path)) {
+            val res = when (val clf = RPCUtils.clf(path)) {
                 is Classification.Cover -> {
                     val spans = RPCUtils.ocr(path)
                     PageKind.Cover(index, page, spans)
@@ -206,7 +216,13 @@ object PDFUtils {
                 is Classification.HandWrite -> {
                     PageKind.HandWrite(index, page)
                 }
+                is Classification.Error -> {
+                    logger.error("样本无法识别：" + clf.message)
+                    PageKind.Unknown(index, page, clf.message)
+                }
             }
+            path.deleteIfExists()
+            res
         }
 
         return Pair(count, clfFlow)
