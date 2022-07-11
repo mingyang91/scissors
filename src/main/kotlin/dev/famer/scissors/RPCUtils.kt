@@ -19,6 +19,7 @@ import java.nio.file.Path
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import kotlin.io.path.createDirectories
+import kotlin.io.path.deleteExisting
 import kotlin.io.path.exists
 
 object RPCUtils {
@@ -43,7 +44,7 @@ object RPCUtils {
         return res
     }
 
-    suspend fun health(): Boolean {
+    private suspend fun health(): Boolean {
         val res: String = client.get("http://localhost:9000/health").body()
         return res.uppercase() == "OK"
     }
@@ -83,7 +84,7 @@ object RPCUtils {
 
         // Re-constructor conda environment variable
         val env = pb.environment()
-        env.set("PATH", (condaEnv() + env.get("PATH")).filterNotNull().joinToString(";"))
+        env["PATH"] = (condaEnv() + env["PATH"]).filterNotNull().joinToString(";")
 
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT)
         pb.redirectError(ProcessBuilder.Redirect.INHERIT)
@@ -146,7 +147,7 @@ object RPCUtils {
         logger.info("Unpacked completed, delete zip file")
     }
 
-    suspend fun newFile(dstDir: File, entry: ZipEntry): File = withContext(Dispatchers.IO) {
+    private suspend fun newFile(dstDir: File, entry: ZipEntry): File = withContext(Dispatchers.IO) {
         File(dstDir, entry.name)
     }
 }

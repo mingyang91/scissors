@@ -53,7 +53,9 @@ def train():
 
 
 def dataset(label: str) -> List[np.array]:
-    files = [join(fr"D:\sample\{label}", name) for name in listdir(fr"D:\sample\{label}")]
+
+    data_dir = fr"D:\复旦大学软件\文档切割\训练数据集\sample\{label}"
+    files = [join(data_dir, name) for name in listdir(data_dir)]
 
     hog_features = [feature for file in files for feature in compute_hog(file, rotates)]
 

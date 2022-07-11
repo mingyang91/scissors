@@ -34,11 +34,11 @@ fun App(onCloseRequest: () -> Unit) {
             )
             liveState = LiveState.Starting
             modelProcess = RPCUtils.startModelService()
-            if (modelProcess != null) {
+            liveState = if (modelProcess != null) {
                 logger.info("初始化完成, 模型服务已启动 PID: ${modelProcess!!.pid()}")
-                liveState = LiveState.Serve
+                LiveState.Serve
             } else {
-                liveState = LiveState.Error("模型服务启动失败，请重新安装本软件")
+                LiveState.Error("模型服务启动失败，请重新安装本软件")
             }
         } catch (e: Throwable) {
             liveState = LiveState.Error(e.message ?: "未知错误")

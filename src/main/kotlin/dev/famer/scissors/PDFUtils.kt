@@ -179,6 +179,7 @@ object PDFUtils {
     suspend fun extractAllImages(file: Path): Pair<Int, Flow<Page>> {
         val pdf = load(file)
         val dir = createFolder(file.name)
+        logger.debug("temporary output dir: $dir")
         val flow = pdf.pages
             .asFlow()
             .onCompletion { e ->

@@ -54,13 +54,13 @@ compose.desktop {
             includeAllModules = true
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "scissors"
-            packageVersion = "1.0.7"
+            packageVersion = "1.0.8"
 
             appResourcesRootDir.set(project.layout.projectDirectory.dir("resources"))
             windows {
                 shortcut = true
                 console = false
-                upgradeUuid = "10c0f00a-d0ed-46af-bfd9-4e02f7975bf8"
+                upgradeUuid = "a99d7179-418d-40de-afed-6c767e2c4632"
                 iconFile.set(project.layout.projectDirectory.file("src/main/resources/images/scissors.ico"))
             }
         }

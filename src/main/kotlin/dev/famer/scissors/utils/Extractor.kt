@@ -1,32 +1,28 @@
 package dev.famer.scissors.utils
 
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.*
+import dev.famer.scissors.PDFUtils
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.runBlocking
-import java.time.Instant
-import kotlin.concurrent.fixedRateTimer
+import java.nio.file.Path
+import kotlin.time.Duration.Companion.seconds
 
 object Extractor {
     @JvmStatic
-    fun main(args: Array<String>) {
-        runBlocking {
-            val f: Flow<Int> = callbackFlow {
-                val timer = fixedRateTimer("test", true, 0, 1000) {
-                    trySend(Unit)
-                }
-                awaitClose { timer.cancel() }
-            }
-                .map { Instant.now().nano }
-                .take(10)
-                .shareIn(this, SharingStarted.Lazily)
-
-            val f1: Deferred<Unit> = async { f.collect { println(it) } }
-            val f2: Deferred<Unit> = async { f.collect { println(it) } }
-            f1.await()
-            f2.await()
-        }
+    fun main(args: Array<String>) = runBlocking {
+        PDFUtils.extractAllImages(
+            Path.of(
+                """D:\复旦大学软件\文档切割\易老师文档样本""",
+                "2022个剂0707",
+                "20220708114415.pdf"
+            )
+        )
+            .second
+            .last()
+        println("=========================")
+        println("||done!                ||")
+        println("=========================")
+        delay(600.seconds)
     }
 
 }
