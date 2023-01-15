@@ -1,12 +1,11 @@
-import org.jetbrains.compose.compose
+import dev.famer.build.CopyResourcesTask
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import dev.famer.build.CopyResourcesTask
 
 plugins {
-    kotlin("jvm") version "1.6.10"
-    kotlin("plugin.serialization") version "1.6.10"
-    id("org.jetbrains.compose") version "1.1.0"
+    kotlin("jvm") version "1.7.20"
+    kotlin("plugin.serialization") version "1.7.20"
+    id("org.jetbrains.compose") version "1.2.2"
 }
 
 group = "dev.famer"
@@ -22,9 +21,9 @@ val ktor_version = "2.0.2"
 
 dependencies {
     testImplementation(kotlin("test"))
-    implementation("ch.qos.logback:logback-classic:1.3.0-alpha16")
-    implementation("org.slf4j:slf4j-api:2.0.0-alpha7")
-    implementation("org.slf4j:jcl-over-slf4j:2.0.0-alpha7")
+    implementation("ch.qos.logback:logback-classic:1.4.5")
+    implementation("org.slf4j:slf4j-api:2.0.5")
+    implementation("org.slf4j:jcl-over-slf4j:2.0.5")
     implementation(compose.desktop.currentOs)
     implementation("org.apache.pdfbox:pdfbox:3.0.0-RC1") {
         exclude(group = "commons-logging", module = "commons-logging")
